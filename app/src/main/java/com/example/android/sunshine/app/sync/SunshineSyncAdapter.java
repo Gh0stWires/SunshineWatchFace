@@ -132,7 +132,9 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements 
             putDataMapRequest.getDataMap().putDouble("MIN_TEMP", minTmp);
             PutDataRequest dataMapRequest = putDataMapRequest.asPutDataRequest();
             Wearable.DataApi.putDataItem(googleApiClient,dataMapRequest);
+            cursor.close();
         }
+
     }
 
     @Override
@@ -413,6 +415,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements 
                 updateWidgets();
                 updateMuzei();
                 notifyWeather();
+                sendWear();
             }
             Log.d(LOG_TAG, "Sync Complete. " + cVVector.size() + " Inserted");
             setLocationStatus(getContext(), LOCATION_STATUS_OK);
