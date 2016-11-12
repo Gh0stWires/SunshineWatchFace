@@ -88,16 +88,20 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements 
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
+        Log.v("test", "onConnected");
+        sendWear();
 
     }
 
     @Override
     public void onConnectionSuspended(int i) {
+        Log.v("test", "Suspended");
 
     }
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        Log.v("test", "fail");
 
     }
 
@@ -113,7 +117,17 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements 
 
     public SunshineSyncAdapter(Context context, boolean autoInitialize) {
         super(context, autoInitialize);
-        googleApiClient = new GoogleApiClient.Builder(context).addConnectionCallbacks(this).addOnConnectionFailedListener(this).addApi(Wearable.API).build();
+        googleApiClient = new GoogleApiClient.Builder(context).addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
+            @Override
+            public void onConnected(@Nullable Bundle bundle) {
+                Log.v("test", "conected");
+            }
+
+            @Override
+            public void onConnectionSuspended(int i) {
+
+            }
+        }).addOnConnectionFailedListener(this).addApi(Wearable.API).build();
         googleApiClient.connect();
     }
 
@@ -130,9 +144,11 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements 
             putDataMapRequest.getDataMap().putInt("WHEATHER", wheather);
             putDataMapRequest.getDataMap().putDouble("MAX_TEMP", maxTmp);
             putDataMapRequest.getDataMap().putDouble("MIN_TEMP", minTmp);
+            putDataMapRequest.getDataMap().putLong("TIME", System.currentTimeMillis());
+            putDataMapRequest.setUrgent();
             PutDataRequest dataMapRequest = putDataMapRequest.asPutDataRequest();
             Wearable.DataApi.putDataItem(googleApiClient,dataMapRequest);
-            cursor.close();
+
         }
 
     }
@@ -415,6 +431,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements 
                 updateWidgets();
                 updateMuzei();
                 notifyWeather();
+                googleApiClient.connect();
                 sendWear();
             }
             Log.d(LOG_TAG, "Sync Complete. " + cVVector.size() + " Inserted");

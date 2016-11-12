@@ -1,1 +1,2 @@
-include ':app', ':watchface'
+include ':app', ':sunshine', ':watch'
+project(':watch').projectDir = new File('watchface')

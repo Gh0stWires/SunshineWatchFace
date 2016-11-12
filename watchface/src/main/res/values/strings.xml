@@ -2,4 +2,5 @@
     <string name="app_name">watchface</string>
     <string name="message">Watch face tapped</string>
     <string name="my_digital_name">Sunshine Face</string>
+    <string name="text_size">40dp</string>
 </resources>

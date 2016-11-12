@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.example.android.watchface;
+package com.example.android.sunshine;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -62,24 +62,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
             Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
 
     String numLow = "0";
-    private final DataApi.DataListener onDataChangedListener = new DataApi.DataListener() {
-        @Override
-        public void onDataChanged(DataEventBuffer dataEventBuffer) {
-            for (DataEvent event : dataEventBuffer){
-                if (event.getType() == DataEvent.TYPE_CHANGED){
-                    DataItem item = event.getDataItem();
-                    if ("/wear-wheather".equals(item.getUri().getPath())){
-                        Log.d("meh", "DataItem changed: " + event.getDataItem().getUri());
-                        DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
-                        numLow = String.format("%3s", String.valueOf(dataMap.getDouble("MIN_TEMP")));
 
-                    }
-                }
-            }
-            dataEventBuffer.release();
-
-        }
-    };
 
     /**
      * Update rate in milliseconds for interactive mode. We update once a second since seconds are
@@ -117,7 +100,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
         }
     }
 
-    private class Engine extends CanvasWatchFaceService.Engine implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
+    private class Engine extends CanvasWatchFaceService.Engine implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, DataApi.DataListener {
         final Handler mUpdateTimeHandler = new EngineHandler(this);
         boolean mRegisteredTimeZoneReceiver = false;
         Paint mBackgroundPaint;
@@ -171,13 +154,15 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     .addConnectionCallbacks(this)
                     .addOnConnectionFailedListener(this)
                     .build();
+            //googleApiClient.connect();
         }
 
         @Override
         public void onDestroy() {
             mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
             if (googleApiClient != null && googleApiClient.isConnected()) {
-                Wearable.DataApi.removeListener(googleApiClient, onDataChangedListener);
+                Wearable.DataApi.removeListener(googleApiClient, this);
+                googleApiClient.disconnect();
             }
             super.onDestroy();
         }
@@ -195,7 +180,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
             paint.setColor(textColor);
             paint.setTypeface(NORMAL_TYPEFACE);
             paint.setAntiAlias(true);
-            paint.setTextSize(getResources().getDimension(R.dimen.digital_temp_text_size));
+            paint.setTextSize(60);
             return paint;
         }
 
@@ -212,8 +197,8 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 invalidate();
             } else {
                 unregisterReceiver();
-                if (googleApiClient != null && googleApiClient.isConnected()){
-                    Wearable.DataApi.removeListener(googleApiClient, onDataChangedListener);
+                if (googleApiClient != null && googleApiClient.isConnected()) {
+                    Wearable.DataApi.removeListener(googleApiClient, this);
                     googleApiClient.disconnect();
                 }
 
@@ -326,7 +311,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     : String.format("%d:%02d:%02d", mCalendar.get(Calendar.HOUR),
                     mCalendar.get(Calendar.MINUTE), mCalendar.get(Calendar.SECOND));
             canvas.drawText(text, mXOffset, mYOffset, mTextPaint);
-            canvas.drawText(numLow, bounds.width()/2, bounds.height()/2 + 75, mLow);
+            canvas.drawText(numLow, bounds.width() / 2, bounds.height() / 2 + 75, mLow);
         }
 
         /**
@@ -363,18 +348,36 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
         @Override
         public void onConnected(@Nullable Bundle bundle) {
-            Wearable.DataApi.addListener(googleApiClient, onDataChangedListener);
+            Wearable.DataApi.addListener(googleApiClient, this);
+            Log.v("test", "onConnected");
         }
 
         @Override
         public void onConnectionSuspended(int i) {
-
+            Log.v("test", "Suspended");
         }
 
         @Override
         public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
+            Log.v("test", "fail");
         }
 
+        @Override
+        public void onDataChanged(DataEventBuffer dataEventBuffer) {
+            Log.v("test", "d changed");
+            for (DataEvent event : dataEventBuffer) {
+                if (event.getType() == DataEvent.TYPE_CHANGED) {
+                    DataItem item = event.getDataItem();
+                    if ("/wear-wheather".equals(item.getUri().getPath())) {
+                        //Log.d("meh", "DataItem changed: " + event.getDataItem().getUri());
+                        DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
+                        numLow = String.format("%3s", String.valueOf(dataMap.getDouble("MIN_TEMP")));
+                        invalidate();
+                    }
+                }
+            }
+            dataEventBuffer.release();
+
+        }
     }
 }
