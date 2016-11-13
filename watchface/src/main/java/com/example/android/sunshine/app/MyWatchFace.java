@@ -14,18 +14,21 @@
  * limitations under the License.
  */
 
-package com.example.android.sunshine;
+package com.example.android.sunshine.app;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -61,7 +64,9 @@ public class MyWatchFace extends CanvasWatchFaceService {
     private static final Typeface NORMAL_TYPEFACE =
             Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
 
-    String numLow = "0";
+    String numLow = "0"+"°";
+    String numHigh = "0"+"°";
+    int wheather = 800;
 
 
     /**
@@ -106,6 +111,8 @@ public class MyWatchFace extends CanvasWatchFaceService {
         Paint mBackgroundPaint;
         Paint mTextPaint;
         Paint mLow;
+        Paint mHigh;
+        Bitmap icon;
         boolean mAmbient;
         Calendar mCalendar;
         GoogleApiClient googleApiClient;
@@ -130,22 +137,27 @@ public class MyWatchFace extends CanvasWatchFaceService {
             super.onCreate(holder);
 
             setWatchFaceStyle(new WatchFaceStyle.Builder(MyWatchFace.this)
-                    .setCardPeekMode(WatchFaceStyle.PEEK_MODE_VARIABLE)
+                    .setCardPeekMode(WatchFaceStyle.PEEK_MODE_SHORT)
                     .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
                     .setShowSystemUiTime(false)
-                    .setAcceptsTapEvents(true)
+                    .setAcceptsTapEvents(false)
                     .build());
             Resources resources = MyWatchFace.this.getResources();
             mYOffset = resources.getDimension(R.dimen.digital_y_offset);
 
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(resources.getColor(R.color.background));
+            Drawable backgroundDrawable = resources.getDrawable(Util.getIcon(wheather), null);
+            icon = ((BitmapDrawable) backgroundDrawable).getBitmap();
 
             mTextPaint = new Paint();
             mTextPaint = createTextPaint(resources.getColor(R.color.digital_text));
 
             mLow = new Paint();
             mLow = createTextTempPaint(resources.getColor(R.color.digital_text));
+
+            mHigh = new Paint();
+            mHigh = createTextTempPaint(resources.getColor(R.color.digital_text));
 
             mCalendar = Calendar.getInstance();
 
@@ -154,7 +166,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     .addConnectionCallbacks(this)
                     .addOnConnectionFailedListener(this)
                     .build();
-            //googleApiClient.connect();
+            googleApiClient.connect();
         }
 
         @Override
@@ -180,7 +192,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
             paint.setColor(textColor);
             paint.setTypeface(NORMAL_TYPEFACE);
             paint.setAntiAlias(true);
-            paint.setTextSize(60);
+            paint.setTextSize(45);
             return paint;
         }
 
@@ -190,17 +202,16 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
             if (visible) {
                 registerReceiver();
-                googleApiClient.connect();
+                //googleApiClient.connect();
 
                 // Update time zone in case it changed while we weren't visible.
                 mCalendar.setTimeZone(TimeZone.getDefault());
                 invalidate();
             } else {
                 unregisterReceiver();
-                if (googleApiClient != null && googleApiClient.isConnected()) {
-                    Wearable.DataApi.removeListener(googleApiClient, this);
-                    googleApiClient.disconnect();
-                }
+                /*if (googleApiClient != null && googleApiClient.isConnected()) {
+                    Wearable.DataApi.removeListener(googleApiClient, this);*/
+                    //googleApiClient.disconnect();
 
             }
 
@@ -308,10 +319,13 @@ public class MyWatchFace extends CanvasWatchFaceService {
             String text = mAmbient
                     ? String.format("%d:%02d", mCalendar.get(Calendar.HOUR),
                     mCalendar.get(Calendar.MINUTE))
-                    : String.format("%d:%02d:%02d", mCalendar.get(Calendar.HOUR),
-                    mCalendar.get(Calendar.MINUTE), mCalendar.get(Calendar.SECOND));
-            canvas.drawText(text, mXOffset, mYOffset, mTextPaint);
-            canvas.drawText(numLow, bounds.width() / 2, bounds.height() / 2 + 75, mLow);
+                    : String.format("%d:%02d", mCalendar.get(Calendar.HOUR),
+                    mCalendar.get(Calendar.MINUTE));
+            canvas.drawBitmap(icon,0,0,null);
+            canvas.drawText(text, mXOffset +60, mYOffset, mTextPaint);
+            canvas.drawText(numLow, mXOffset + 75, mYOffset + 75, mLow);
+            canvas.drawText(numHigh, mXOffset + 150, mYOffset + 75, mHigh);
+
         }
 
         /**
@@ -371,7 +385,9 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     if ("/wear-wheather".equals(item.getUri().getPath())) {
                         //Log.d("meh", "DataItem changed: " + event.getDataItem().getUri());
                         DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
-                        numLow = String.format("%3s", String.valueOf(dataMap.getDouble("MIN_TEMP")));
+                        numLow = Util.formatTemperature(dataMap.getDouble("MIN_TEMP")) + "°";
+                        numHigh = Util.formatTemperature(dataMap.getDouble("MAX_TEMP")) + "°";
+                        wheather = dataMap.getInt("WHEATHER");
                         invalidate();
                     }
                 }
