@@ -147,7 +147,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(resources.getColor(R.color.background));
-            Drawable backgroundDrawable = resources.getDrawable(Util.getIcon(wheather), null);
+            Drawable backgroundDrawable = getResources().getDrawable(Util.getIcon(wheather), null);
             icon = ((BitmapDrawable) backgroundDrawable).getBitmap();
 
             mTextPaint = new Paint();
@@ -321,10 +321,17 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     mCalendar.get(Calendar.MINUTE))
                     : String.format("%d:%02d", mCalendar.get(Calendar.HOUR),
                     mCalendar.get(Calendar.MINUTE));
-            canvas.drawBitmap(icon,0,0,null);
+            float scaledWidth = (mHigh.getTextSize() / icon.getHeight()) * icon.getWidth();
+            Bitmap weatherIcon = Bitmap.createScaledBitmap(icon, (int) scaledWidth, (int) mHigh.getTextSize(), true);
+            float centerX = bounds.width()/2;
+            float centerY = (bounds.height() /2f) + mYOffset;
+            if (!isInAmbientMode()) {
+                canvas.drawBitmap(weatherIcon, centerX, centerY - icon.getHeight(), null);
+                canvas.drawText(numLow, mXOffset + 75, mYOffset + 75, mLow);
+                canvas.drawText(numHigh, mXOffset + 150, mYOffset + 75, mHigh);
+            }
             canvas.drawText(text, mXOffset +60, mYOffset, mTextPaint);
-            canvas.drawText(numLow, mXOffset + 75, mYOffset + 75, mLow);
-            canvas.drawText(numHigh, mXOffset + 150, mYOffset + 75, mHigh);
+
 
         }
 
