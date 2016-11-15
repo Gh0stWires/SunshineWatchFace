@@ -16,9 +16,9 @@
             <meta-data android:name="android.service.wallpaper"
                 android:resource="@xml/watch_face" />
             <meta-data android:name="com.google.android.wearable.watchface.preview"
-                android:resource="@drawable/bg" />
+                android:resource="@drawable/screen" />
             <meta-data android:name="com.google.android.wearable.watchface.preview_circular"
-                android:resource="@drawable/bg" />
+                android:resource="@drawable/screen" />
 
             <intent-filter>
                 <action android:name="android.service.wallpaper.WallpaperService" />
